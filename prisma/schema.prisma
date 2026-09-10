@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int           @id @default(autoincrement())
+  username  String        @unique @db.VarChar(100)
+  password  String        @db.VarChar(255)
+  name      String        @db.VarChar(100)
+  jenis_kel String        @db.VarChar(100)
+  no_hp     String        @db.VarChar(20)
+  email     String        @unique @db.VarChar(254)
+  alamat    String        @db.VarChar(500)
+  role      String        @db.VarChar(20)
+  token     String?       @db.VarChar(100)
+  activities Activity[]
+  documentations Documentation[]
+  
+  @@map("users")
+}
+
+model Category {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique @db.VarChar(100)
+  description  String        @db.VarChar(255)
+  activities   Activity[]
+  
+  @@map("categories")
+}
+
+model Activity {
+  id                  Int      @id @default(autoincrement())
+  name                String   @db.VarChar(150)
+  description         String?  @db.VarChar(5000)
+  start_date          DateTime @db.Date
+  end_date            DateTime @db.Date
+  category_id         Int
+  responsible_user_id Int?
+  status              String   @db.VarChar(20)
+  
+  category            Category @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  responsible_user    User?    @relation(fields: [responsible_user_id], references: [id], onDelete: SetNull)
+  documentations      Documentation[]
+
+  @@index([category_id])
+  @@index([responsible_user_id])
+  @@index([start_date])
+  @@index([status])
+  @@map("activities")
+}
+
+model Documentation {
+  id          Int      @id @default(autoincrement())
+  activity_id Int
+  file_name   String   @db.VarChar(255)
+  file_path   String   @db.VarChar(500)
+  mime_type   String   @db.VarChar(100)
+  size        Int      @db.UnsignedInt
+  uploaded_by Int?
+  created_at  DateTime @default(now())
+
+  activity Activity @relation(fields: [activity_id], references: [id], onDelete: Cascade)
+  uploader User?    @relation(fields: [uploaded_by], references: [id], onDelete: SetNull)
+
+  @@index([activity_id])
+  @@index([uploaded_by])
+  @@map("documentations")
+}

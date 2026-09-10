@@ -1,0 +1,48 @@
+{
+  "name": "lpm_monitor",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "build": "tsc",
+    "seed": "prisma db seed",
+    "dev": "nodemon dist/main.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.cjs"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.ts$": "babel-jest"
+    }
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.0",
+    "bcrypt": "^6.0.0",
+    "express": "^5.2.1",
+    "uuid": "^14.0.2",
+    "winston": "^3.19.0",
+    "zod": "^4.6.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
+    "@babel/preset-typescript": "^7.29.7",
+    "@jest/globals": "^30.5.1",
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.20.2",
+    "@types/supertest": "^7.2.1",
+    "@types/uuid": "^10.0.0",
+    "babel-jest": "^30.5.1",
+    "jest": "^30.5.1",
+    "prisma": "6.19.0",
+    "supertest": "^7.2.2",
+    "typescript": "^5.9.3"
+  }
+}
