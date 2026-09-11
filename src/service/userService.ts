@@ -5,41 +5,84 @@ import {prismaClient} from "../application/db";
 import {ResponseError} from "../error/responseError"
 import bcrypt from "bcrypt"
 import { randomUUID } from "node:crypto"
-import { User } from "@prisma/client";
+import { Prisma, User } from "@prisma/client";
+import {DeleteUserRequest, DeleteUserPreviewResponse} from "../model/userModel"
 
 export class UserService {
 
-    static async delete(id: number, currentUser: User): Promise<UserResponse> {
-        const userId = Validation.validate(UserValidation.DELETE, id)
-
-        const user = await prismaClient.user.findUnique({
-            where: {
-                id: userId
-            }
-        })
-
+    static async deletePreview(id: number, currentUser: User): Promise<DeleteUserPreviewResponse> {
+        const userId = Validation.validate(UserValidation.ID, id)
+        if (currentUser.role !== "ADMIN") {
+            throw new ResponseError(403, "Access denied")
+        }
+        const user = await prismaClient.user.findUnique({where: {id: userId}})
         if (!user) {
             throw new ResponseError(404, "User not found")
         }
-
         if (user.id === currentUser.id) {
             throw new ResponseError(409, "You cannot delete your own account")
         }
-
-        if (user.role === "ADMIN") {
-            const totalAdmins = await prismaClient.user.count({where: {role: "ADMIN"}})
-            if (totalAdmins <= 1) {
-                throw new ResponseError(409, "The last ADMIN cannot be deleted")
-            }
-        }
-
-        const result = await prismaClient.user.delete({
-            where: {
-                id: userId
-            }
+        const total = await prismaClient.activity.count({
+            where: {responsible_user_id: userId, status: {in: ["DIRENCANAKAN", "BERJALAN"]}}
         })
+        return {user: toUserResponse(user), active_activities: total, requires_replacement: total > 0}
+    }
 
-        return toUserResponse(result)
+    static async delete(id: number, currentUser: User, request: DeleteUserRequest): Promise<UserResponse> {
+        const userId = Validation.validate(UserValidation.DELETE, id)
+        const deleteRequest = UserValidation.DELETE_REQUEST.parse(request)
+        if (currentUser.role !== "ADMIN") {
+            throw new ResponseError(403, "Access denied")
+        }
+        if (userId === currentUser.id) {
+            throw new ResponseError(409, "You cannot delete your own account")
+        }
+        if (deleteRequest.replacement_user_id === userId) {
+            throw new ResponseError(400, "Replacement user must be different from the deleted user")
+        }
+        return prismaClient.$transaction(async (transaction) => {
+            // Lock both users before counting or transferring their responsibilities.
+            await transaction.$queryRaw(Prisma.sql`SELECT id FROM users
+                WHERE id IN (${userId}, ${deleteRequest.replacement_user_id ?? userId})
+                OR role = 'ADMIN' ORDER BY id FOR UPDATE`)
+            const user = await transaction.user.findUnique({where: {id: userId}})
+            if (!user) {
+                throw new ResponseError(404, "User not found")
+            }
+            if (user.role === "ADMIN") {
+                const totalAdmins = await transaction.user.count({where: {role: "ADMIN"}})
+                if (totalAdmins <= 1) {
+                    throw new ResponseError(409, "The last ADMIN cannot be deleted")
+                }
+            }
+            if (deleteRequest.replacement_user_id !== undefined) {
+                const replacement = await transaction.user.findUnique({
+                    where: {id: deleteRequest.replacement_user_id}
+                })
+                if (!replacement) {
+                    throw new ResponseError(404, "Replacement user not found")
+                }
+                if (replacement.role !== "ADMIN" && replacement.role !== "STAF") {
+                    throw new ResponseError(400, "Replacement user must be ADMIN or STAF")
+                }
+            }
+            const where = {
+                responsible_user_id: userId,
+                status: {in: ["DIRENCANAKAN", "BERJALAN"]}
+            }
+            const total = await transaction.activity.count({where: where})
+            if (total > 0 && deleteRequest.replacement_user_id === undefined) {
+                throw new ResponseError(409, "Select a replacement user for active activities")
+            }
+            if (total > 0 && deleteRequest.replacement_user_id !== undefined) {
+                await transaction.activity.updateMany({
+                    where: where,
+                    data: {responsible_user_id: deleteRequest.replacement_user_id}
+                })
+            }
+            const result = await transaction.user.delete({where: {id: userId}})
+            return toUserResponse(result)
+        }, {isolationLevel: Prisma.TransactionIsolationLevel.Serializable})
     }
 
     static async register(request: CreateUserRequest) : Promise<UserResponse>{

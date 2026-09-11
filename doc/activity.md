@@ -1,5 +1,7 @@
 # Activity API Spec
 
+ID pada response berupa number. Activity tidak memiliki created_at/updated_at sesuai schema yang ada. Filter tanggal menampilkan kegiatan yang beririsan dengan rentang secara inklusif. responsible_user_id dapat null pada response jika pengguna telah dihapus.
+
 ## CREATE ACTIVITY
 endpoint : POST /api/activities
 
@@ -16,8 +18,8 @@ request body:
     "description": "Evaluasi pelaksanaan program mutu.",
     "start_date": "2026-09-15",
     "end_date": "2026-09-15",
-    "category_id": "1",
-    "responsible_user_id": "1",
+    "category_id": 1,
+    "responsible_user_id": 1,
     "status": "DIRENCANAKAN"
 }
 ```
@@ -29,16 +31,14 @@ status: 201 Created
 ```json
 {
     "data": {
-        "id": "1",
+        "id": 1,
         "name": "Rapat Evaluasi Mutu",
         "description": "Evaluasi pelaksanaan program mutu.",
         "start_date": "2026-09-15",
         "end_date": "2026-09-15",
-        "category_id": "1",
-        "responsible_user_id": "1",
-        "status": "DIRENCANAKAN",
-        "created_at": "2026-09-10T03:00:00Z",
-        "updated_at": "2026-09-10T03:00:00Z"
+        "category_id": 1,
+        "responsible_user_id": 1,
+        "status": "DIRENCANAKAN"
     }
 }
 ```
@@ -66,7 +66,7 @@ X-API-TOKEN: token
 
 request query:
 
-- search: opsional, pencarian sebagian nama kegiatan tanpa membedakan huruf besar/kecil, 1-150 karakter.
+- search: opsional, pencarian sebagian nama kegiatan; sensitivitas huruf mengikuti collation MySQL, 1-150 karakter.
 - start_date dan end_date: opsional, format YYYY-MM-DD; jika keduanya ada, end_date >= start_date.
 - category_id: opsional, ID kategori.
 - status: opsional, DIRENCANAKAN, BERJALAN, atau SELESAI.
@@ -74,9 +74,9 @@ request query:
 - page: integer >= 1, default 1.
 - size: integer 1-100, default 10.
 - Semua filter digabung menggunakan AND. Referensi filter yang tidak memiliki hasil menghasilkan array kosong.
-- Urutan: created_at terbaru dahulu, lalu id menaik jika timestamp sama.
+- Urutan: id terbesar dahulu, mengikuti schema Activity yang tidak memiliki timestamp.
 
-contoh: /api/activities?search=rapat&status=DIRENCANAKAN&page=1&size=10
+contoh: /api/activities/current?search=rapat&status=DIRENCANAKAN&page=1&size=10
 
 response body (success):
 
@@ -85,16 +85,14 @@ status: 200 OK
 {
     "data": [
         {
-            "id": "1",
+            "id": 1,
             "name": "Rapat Evaluasi Mutu",
             "description": "Evaluasi pelaksanaan program mutu.",
             "start_date": "2026-09-15",
             "end_date": "2026-09-15",
-            "category_id": "1",
-            "responsible_user_id": "1",
-            "status": "DIRENCANAKAN",
-            "created_at": "2026-09-10T03:00:00Z",
-            "updated_at": "2026-09-10T03:00:00Z"
+            "category_id": 1,
+            "responsible_user_id": 1,
+            "status": "DIRENCANAKAN"
         }
     ]
 }
@@ -139,16 +137,14 @@ status: 200 OK
 ```json
 {
     "data": {
-        "id": "1",
+        "id": 1,
         "name": "Rapat Evaluasi Mutu",
         "description": "Evaluasi pelaksanaan program mutu.",
         "start_date": "2026-09-15",
         "end_date": "2026-09-15",
-        "category_id": "1",
-        "responsible_user_id": "1",
-        "status": "DIRENCANAKAN",
-        "created_at": "2026-09-10T03:00:00Z",
-        "updated_at": "2026-09-10T03:00:00Z"
+        "category_id": 1,
+        "responsible_user_id": 1,
+        "status": "DIRENCANAKAN"
     }
 }
 ```
@@ -159,14 +155,14 @@ response body (failed):
 status: 404 Not Found
 ```json
 {
-    "errors": "Kegiatan tidak ditemukan"
+    "errors": "Activity not found"
 }
 ```
 
 status error lainnya: mengikuti ketentuan pada [common.md](common.md), sesuai operasi.
 
 ## UPDATE ACTIVITY
-endpoint : PATCH /api/activities/current
+endpoint : PATCH /api/activities/current/{id}
 
 akses: ADMIN untuk seluruh kegiatan; STAF hanya kegiatan yang menjadi tanggung jawabnya
 
@@ -191,16 +187,14 @@ status: 200 OK
 ```json
 {
     "data": {
-        "id": "1",
+        "id": 1,
         "name": "Rapat Evaluasi Mutu",
         "description": "Evaluasi pelaksanaan program mutu.",
         "start_date": "2026-09-15",
         "end_date": "2026-09-15",
-        "category_id": "1",
-        "responsible_user_id": "1",
-        "status": "DIRENCANAKAN",
-        "created_at": "2026-09-10T03:00:00Z",
-        "updated_at": "2026-09-10T03:00:00Z"
+        "category_id": 1,
+        "responsible_user_id": 1,
+        "status": "DIRENCANAKAN"
     }
 }
 ```
@@ -246,16 +240,14 @@ status: 200 OK
 ```json
 {
     "data": {
-        "id": "1",
+        "id": 1,
         "name": "Rapat Evaluasi Mutu",
         "description": "Evaluasi pelaksanaan program mutu.",
         "start_date": "2026-09-15",
         "end_date": "2026-09-15",
-        "category_id": "1",
-        "responsible_user_id": "1",
-        "status": "BERJALAN",
-        "created_at": "2026-09-10T03:00:00Z",
-        "updated_at": "2026-09-15T02:00:00Z"
+        "category_id": 1,
+        "responsible_user_id": 1,
+        "status": "BERJALAN"
     }
 }
 ```
@@ -273,7 +265,7 @@ status: 400 Bad Request
 status error lainnya: mengikuti ketentuan pada [common.md](common.md), sesuai operasi.
 
 ## DELETE ACTIVITY
-endpoint : DELETE /api/activities/current
+endpoint : DELETE /api/activities/current/{id}
 
 akses: ADMIN untuk seluruh kegiatan; STAF hanya kegiatan yang menjadi tanggung jawabnya
 
@@ -287,7 +279,7 @@ status: 200 OK
 ```json
 {
     "data": {
-        "message": "Kegiatan berhasil dihapus"
+        "message": "Activity deleted successfully"
     }
 }
 ```
@@ -298,7 +290,7 @@ response body (failed):
 status: 404 Not Found
 ```json
 {
-    "errors": "Kegiatan tidak ditemukan"
+    "errors": "Activity not found"
 }
 ```
 

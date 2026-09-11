@@ -1,3 +1,5 @@
+import {FeatureTest as BaseFeatureTest} from "./feature-util"
+import {FileStorage} from "../src/application/fileStorage"
 import supertest from "supertest"
 import { describe, expect, it, beforeEach, afterEach, afterAll} from "@jest/globals"
 import {web} from "../src/application/web"
@@ -341,6 +343,7 @@ describe('DELETE /api/users/:id', ()=> {
         const response = await supertest(web)
         .delete(`/api/users/${user.id}`)
         .set("X-API-TOKEN", "test")
+        .send({confirm: true})
 
         logger.debug(response.body)
         expect(response.status).toBe(200)
@@ -427,7 +430,7 @@ describe('User API rules', ()=> {
 
     it('should reject deleting the signed in user', async ()=> {
         const user = await UserTest.get()
-        const response = await supertest(web).delete(`/api/users/${user.id}`).set("X-API-TOKEN", "test")
+        const response = await supertest(web).delete(`/api/users/${user.id}`).set("X-API-TOKEN", "test").send({confirm: true})
         expect(response.status).toBe(409)
         expect(response.body.errors).toBe("You cannot delete your own account")
     })
@@ -514,5 +517,119 @@ describe('User API rules', ()=> {
         expect((await supertest(web).patch(`/api/users/${user.id}`).set("X-API-TOKEN", "test").send({role: "other"})).status).toBe(400)
         expect((await supertest(web).patch(`/api/users/${user.id}`).set("X-API-TOKEN", "test").send({email: "test"})).status).toBe(409)
         expect((await supertest(web).get("/api/users")).status).toBe(401)
+    })
+})
+
+class FeatureTest extends BaseFeatureTest {
+    static scope = "user_deletion"
+}
+
+describe("user-deletion-flow", ()=> {
+    beforeEach(async ()=> {
+        await FeatureTest.delete()
+        await FeatureTest.create()
+    })
+
+    afterEach(async ()=> {
+        await FeatureTest.delete()
+    })
+    it("should reject preview if token is invalid", async ()=> {
+        const data = await FeatureTest.get()
+        const response = await supertest(web).get("/api/users/" + data.staff.id + "/deletion-preview")
+        .set("X-API-TOKEN", "wrong-token")
+        expect(response.status).toBe(401)
+    })
+
+    it("should reject preview if id is invalid", async ()=> {
+        const response = await supertest(web).get("/api/users/abc/deletion-preview")
+        .set("X-API-TOKEN", "user_deletion-token")
+        expect(response.status).toBe(400)
+    })
+
+    it("should preview active responsibilities without deleting data", async ()=> {
+        const data = await FeatureTest.get()
+        const response = await supertest(web).get("/api/users/" + data.staff.id + "/deletion-preview")
+        .set("X-API-TOKEN", "user_deletion-token")
+        expect(response.status).toBe(200)
+        expect(response.body.data.active_activities).toBe(1)
+        expect(response.body.data.requires_replacement).toBe(true)
+        expect(response.body.data.user.password).toBeUndefined()
+        expect(await prismaClient.user.findUnique({where: {id: data.staff.id}})).not.toBeNull()
+    })
+
+    it("should reject deletion without confirmation", async ()=> {
+        const data = await FeatureTest.get()
+        const response = await supertest(web).delete("/api/users/" + data.staff.id)
+        .set("X-API-TOKEN", "user_deletion-token")
+        .send({replacement_user_id: data.admin.id, confirm: false})
+        expect(response.status).toBe(400)
+        expect((await prismaClient.activity.findUniqueOrThrow({where: {id: data.activity.id}})).responsible_user_id).toBe(data.staff.id)
+        expect(await prismaClient.user.findUnique({where: {id: data.staff.id}})).not.toBeNull()
+    })
+
+    it("should reject deletion with active activities but no replacement", async ()=> {
+        const data = await FeatureTest.get()
+        const response = await supertest(web).delete("/api/users/" + data.staff.id)
+        .set("X-API-TOKEN", "user_deletion-token").send({confirm: true})
+        expect(response.status).toBe(409)
+        expect(response.body.errors).toBe("Select a replacement user for active activities")
+        expect(await prismaClient.user.findUnique({where: {id: data.staff.id}})).not.toBeNull()
+    })
+
+    it("should reject an identical or nonexistent replacement", async ()=> {
+        const data = await FeatureTest.get()
+        const response = await supertest(web).delete("/api/users/" + data.staff.id)
+        .set("X-API-TOKEN", "user_deletion-token").send({confirm: true, replacement_user_id: data.staff.id})
+        expect(response.status).toBe(400)
+        expect(await prismaClient.user.findUnique({where: {id: 2147483647}})).toBeNull()
+        expect((await supertest(web).delete("/api/users/" + data.staff.id)
+            .set("X-API-TOKEN", "user_deletion-token").send({confirm: true, replacement_user_id: 2147483647})).status).toBe(404)
+        expect((await prismaClient.activity.findUniqueOrThrow({where: {id: data.activity.id}})).responsible_user_id).toBe(data.staff.id)
+    })
+
+    it("should reject STAF performing reassignment and deletion", async ()=> {
+        const data = await FeatureTest.get()
+        const response = await supertest(web).delete("/api/users/" + data.admin.id)
+        .set("X-API-TOKEN", "user_deletion-staff-token").send({confirm: true, replacement_user_id: data.staff.id})
+        expect(response.status).toBe(403)
+        expect((await supertest(web).get("/api/users/" + data.admin.id + "/deletion-preview")
+            .set("X-API-TOKEN", "user_deletion-staff-token")).status).toBe(403)
+    })
+
+    it("should transfer planned and ongoing activities and retain completed history", async ()=> {
+        const data = await FeatureTest.get()
+        await prismaClient.activity.create({data: {
+            name: "Ongoing", start_date: data.activity.start_date, end_date: data.activity.end_date,
+            category_id: data.category.id, responsible_user_id: data.staff.id, status: "BERJALAN"
+        }})
+        await prismaClient.activity.create({data: {
+            name: "Completed", start_date: data.activity.start_date, end_date: data.activity.end_date,
+            category_id: data.category.id, responsible_user_id: data.staff.id, status: "SELESAI"
+        }})
+        const response = await supertest(web).delete("/api/users/" + data.staff.id)
+        .set("X-API-TOKEN", "user_deletion-token").send({confirm: true, replacement_user_id: data.admin.id})
+        expect(response.status).toBe(200)
+        expect(response.body.data.id).toBe(data.staff.id)
+        expect(await prismaClient.user.findUnique({where: {id: data.staff.id}})).toBeNull()
+        expect(await prismaClient.activity.count({where: {
+            category_id: data.category.id, responsible_user_id: data.admin.id,
+            status: {in: ["DIRENCANAKAN", "BERJALAN"]}
+        }})).toBe(2)
+        expect((await prismaClient.activity.findFirstOrThrow({where: {
+            category_id: data.category.id, status: "SELESAI"
+        }})).responsible_user_id).toBeNull()
+        expect((await prismaClient.documentation.findUniqueOrThrow({where: {id: data.document.id}})).uploaded_by).toBeNull()
+        expect(await FileStorage.read(data.document.file_path)).toEqual(Buffer.from("%PDF-1.4\n%%EOF"))
+        expect((await supertest(web).get("/api/users/current").set("X-API-TOKEN", "user_deletion-staff-token")).status).toBe(401)
+    })
+
+    it("should delete without replacement when only completed activities remain", async ()=> {
+        const data = await FeatureTest.get()
+        await prismaClient.activity.update({where: {id: data.activity.id}, data: {status: "SELESAI"}})
+        const response = await supertest(web).delete("/api/users/" + data.staff.id)
+        .set("X-API-TOKEN", "user_deletion-token").send({confirm: true})
+        expect(response.status).toBe(200)
+        expect((await prismaClient.activity.findUniqueOrThrow({where: {id: data.activity.id}})).responsible_user_id).toBeNull()
+        expect((await prismaClient.documentation.findUniqueOrThrow({where: {id: data.document.id}})).uploaded_by).toBeNull()
     })
 })

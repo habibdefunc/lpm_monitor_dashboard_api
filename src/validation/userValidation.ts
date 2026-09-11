@@ -2,6 +2,10 @@ import { CreateUserRequest, LoginUserRequest, UpdateUserRequest, UpdateCurrentUs
 import {z, ZodType} from "zod";
 
 export class UserValidation {
+    static readonly DELETE_REQUEST = z.object({
+        confirm: z.literal(true),
+        replacement_user_id: z.number().int().positive().max(2147483647).optional()
+    }).strict()
     static readonly ID: ZodType<number> = z.number().int().positive().max(2147483647)
 
     static readonly DELETE: ZodType<number> = z.number().int().positive().max(2147483647)

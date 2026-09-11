@@ -1,5 +1,7 @@
 # Calendar API Spec
 
+Kalender menampilkan kegiatan yang beririsan dengan bulan terpilih, termasuk kegiatan lintas bulan. end_date inklusif. Data STAF dibatasi pada tanggung jawabnya. Warna: DIRENCANAKAN #3B82F6, BERJALAN #F59E0B, SELESAI #22C55E. Detail melalui GET /api/activities/current/{activity_id}.
+
 ## GET CALENDAR
 endpoint : GET /api/calendar
 
@@ -30,12 +32,12 @@ status: 200 OK
         "year": 2026,
         "events": [
             {
-                "activity_id": "1",
+                "activity_id": 1,
                 "name": "Rapat Evaluasi Mutu",
                 "start_date": "2026-09-15",
                 "end_date": "2026-09-15",
-                "category_id": "1",
-                "responsible_user_id": "1",
+                "category_id": 1,
+                "responsible_user_id": 1,
                 "status": "DIRENCANAKAN",
                 "status_label": "Direncanakan",
                 "color": "#3B82F6"

@@ -2,12 +2,25 @@ import {Request, Response, NextFunction} from "express"
 import { CreateUserRequest, LoginUserRequest, UpdateUserRequest, UpdateCurrentUserRequest} from "../model/userModel"
 import { UserRequest } from "../type/userRequest"
 import {UserService} from "../service/userService"
+import {DeleteUserRequest} from "../model/userModel"
 
 export class UserController {
+    static async deletePreview(req: UserRequest, res: Response, next: NextFunction){
+        try{
+            const id = Number(req.params.id)
+            const response = await UserService.deletePreview(id, req.user!)
+            res.status(200).json({data: response})
+        }
+        catch (e){
+            next(e)
+        }
+    }
+
     static async delete(req: UserRequest, res: Response, next: NextFunction){
         try{
             const id = Number(req.params.id)
-            const response = await UserService.delete(id, req.user!)
+            const request: DeleteUserRequest = req.body as DeleteUserRequest
+            const response = await UserService.delete(id, req.user!, request)
             res.status(200).json({
                 data: response
             })

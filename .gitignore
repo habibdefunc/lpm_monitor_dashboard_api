@@ -25,6 +25,8 @@ node_modules/
 *.swp
 *.swo
 
+/storage/documentations/
+
 # Local editor and operating system files
 .idea/
 .vscode/

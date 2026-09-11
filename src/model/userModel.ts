@@ -1,5 +1,16 @@
 import {User} from "@prisma/client"
 
+export type DeleteUserRequest = {
+    confirm: boolean
+    replacement_user_id?: number | undefined
+}
+
+export type DeleteUserPreviewResponse = {
+    user: UserResponse
+    active_activities: number
+    requires_replacement: boolean
+}
+
 export type UserResponse = {
     id: number
     username: string

@@ -1,5 +1,7 @@
 # Dashboard API Spec
 
+Seluruh data dibatasi pada kegiatan milik STAF; ADMIN melihat seluruh kegiatan. Grafik menghitung tanggal mulai per bulan (12 bulan). Agenda terdekat berisi maksimal 5 kegiatan DIRENCANAKAN dengan tanggal mulai hari ini atau sesudahnya. Kegiatan terbaru berisi maksimal 5 kegiatan berdasarkan id terbesar; schema Activity tidak memiliki timestamp.
+
 ## GET DASHBOARD
 endpoint : GET /api/dashboard
 
@@ -80,30 +82,26 @@ status: 200 OK
         ],
         "upcoming_activities": [
             {
-                "id": "1",
+                "id": 1,
                 "name": "Rapat Evaluasi Mutu",
                 "description": "Evaluasi pelaksanaan program mutu.",
                 "start_date": "2026-09-15",
                 "end_date": "2026-09-15",
-                "category_id": "1",
-                "responsible_user_id": "1",
-                "status": "DIRENCANAKAN",
-                "created_at": "2026-09-10T03:00:00Z",
-                "updated_at": "2026-09-10T03:00:00Z"
+                "category_id": 1,
+                "responsible_user_id": 1,
+                "status": "DIRENCANAKAN"
             }
         ],
         "latest_activities": [
             {
-                "id": "1",
+                "id": 1,
                 "name": "Rapat Evaluasi Mutu",
                 "description": "Evaluasi pelaksanaan program mutu.",
                 "start_date": "2026-09-15",
                 "end_date": "2026-09-15",
-                "category_id": "1",
-                "responsible_user_id": "1",
-                "status": "DIRENCANAKAN",
-                "created_at": "2026-09-10T03:00:00Z",
-                "updated_at": "2026-09-10T03:00:00Z"
+                "category_id": 1,
+                "responsible_user_id": 1,
+                "status": "DIRENCANAKAN"
             }
         ]
     }

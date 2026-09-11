@@ -213,8 +213,8 @@ status: 401 Unauthorized
 
 status error lainnya: mengikuti ketentuan umum di atas.
 
-## DELETE USER
-endpoint : DELETE /api/users/current/:id
+## PREVIEW DELETE USER
+endpoint : GET /api/users/:id/deletion-preview
 
 akses: ADMIN
 
@@ -224,9 +224,71 @@ X-API-TOKEN: token
 
 request parameter:
 
-id: ID pengguna yang akan dihapus, misalnya /api/users/current/1.
+id: ID pengguna yang akan dihapus.
 
-request body: tidak diperlukan.
+response body (success):
+
+status: 200 OK
+```json
+{
+    "data": {
+        "user": {
+            "id": 1,
+            "username": "staf01",
+            "name": "Staf LPM",
+            "jenis_kel": "L",
+            "email": "staf01@example.com",
+            "no_hp": "081234567890",
+            "alamat": "Medan",
+            "role": "STAF"
+        },
+        "active_activities": 2,
+        "requires_replacement": true
+    }
+}
+```
+
+Preview tidak mengubah data. Kegiatan aktif adalah DIRENCANAKAN dan BERJALAN. Jika tidak ada, active_activities = 0 dan requires_replacement = false. Frontend memilih pengganti dari GET /api/users, mengecualikan pengguna yang akan dihapus, lalu menampilkan konfirmasi. Jumlah kegiatan diperiksa ulang saat DELETE; preview bukan jaminan bahwa data belum berubah.
+
+status error: 400 untuk ID tidak valid, 401 token tidak valid, 403 bukan ADMIN, 404 pengguna tidak ditemukan, 409 mencoba menghapus akun sendiri.
+
+## DELETE USER
+endpoint : DELETE /api/users/:id
+
+akses: ADMIN
+
+request header:
+
+X-API-TOKEN: token
+
+request parameter:
+
+id: ID pengguna yang akan dihapus, misalnya /api/users/1.
+
+request body:
+
+```json
+{
+    "confirm": true,
+    "replacement_user_id": 2
+}
+```
+
+confirm wajib boolean true. replacement_user_id berupa number integer positif, wajib jika masih ada kegiatan aktif. Pengganti harus pengguna lain yang terdaftar dengan role ADMIN atau STAF. Jika tidak ada kegiatan aktif, cukup kirim {"confirm": true}. Field tambahan ditolak.
+
+Setelah konfirmasi, server mengalihkan seluruh kegiatan DIRENCANAKAN dan BERJALAN ke pengganti lalu menghapus pengguna dalam satu transaksi. Jika salah satu langkah gagal, seluruh perubahan dibatalkan. Kegiatan SELESAI tidak dialihkan: responsible_user_id menjadi null. Dokumentasi dan file tetap disimpan; uploaded_by menjadi null. Token pengguna yang dihapus tidak dapat digunakan lagi.
+
+Akun sendiri dan ADMIN terakhir tidak dapat dihapus. Response sukses tetap UserResponse pengguna yang dihapus, tanpa password dan token.
+
+status error tambahan:
+
+- 400: konfirmasi tidak valid, ID pengganti tidak valid, pengganti sama dengan target, atau role pengganti tidak didukung.
+- 401: token tidak valid.
+- 403: bukan ADMIN.
+- 404: pengguna target atau pengganti tidak ditemukan.
+- 409: akun sendiri, ADMIN terakhir, atau kegiatan aktif belum memiliki pengganti.
+
+Jika kegiatan aktif belum memiliki pengganti, errors = "Select a replacement user for active activities". Pengganti yang tidak ditemukan menghasilkan errors = "Replacement user not found".
 
 response body (success):
 

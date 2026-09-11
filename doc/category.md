@@ -1,5 +1,7 @@
 # Category API Spec
 
+name wajib 1-100 karakter dan description wajib 1-255 karakter saat create. Update minimal satu field. ID pada response berupa number.
+
 ## CREATE CATEGORY
 endpoint : POST /api/categories
 
@@ -24,7 +26,7 @@ status: 201 Created
 ```json
 {
     "data": {
-        "id": "1",
+        "id": 1,
         "name": "Rapat",
         "description": "Pertemuan koordinasi dan evaluasi."
     }
@@ -37,7 +39,7 @@ response body (failed):
 status: 409 Conflict
 ```json
 {
-    "errors": "Nama kategori sudah digunakan"
+    "errors": "Category name already exists"
 }
 ```
 
@@ -60,7 +62,7 @@ status: 200 OK
 {
     "data": [
         {
-            "id": "1",
+            "id": 1,
             "name": "Rapat",
             "description": "Pertemuan koordinasi dan evaluasi."
         }
@@ -95,7 +97,7 @@ status: 200 OK
 ```json
 {
     "data": {
-        "id": "1",
+        "id": 1,
         "name": "Rapat",
         "description": "Pertemuan koordinasi dan evaluasi."
     }
@@ -108,14 +110,14 @@ response body (failed):
 status: 404 Not Found
 ```json
 {
-    "errors": "Kategori tidak ditemukan"
+    "errors": "Category not found"
 }
 ```
 
 status error lainnya: mengikuti ketentuan pada [common.md](common.md), sesuai operasi.
 
 ## UPDATE CATEGORY
-endpoint : PATCH /api/categories/current
+endpoint : PATCH /api/categories/current/{id}
 
 akses: ADMIN
 
@@ -140,7 +142,7 @@ status: 200 OK
 ```json
 {
     "data": {
-        "id": "1",
+        "id": 1,
         "name": "Rapat",
         "description": "Pertemuan koordinasi dan evaluasi."
     }
@@ -153,14 +155,14 @@ response body (failed):
 status: 409 Conflict
 ```json
 {
-    "errors": "Nama kategori sudah digunakan"
+    "errors": "Category name already exists"
 }
 ```
 
 status error lainnya: mengikuti ketentuan pada [common.md](common.md), sesuai operasi.
 
 ## DELETE CATEGORY
-endpoint : DELETE /api/categories/current
+endpoint : DELETE /api/categories/current/{id}
 
 akses: ADMIN
 
@@ -174,7 +176,7 @@ status: 200 OK
 ```json
 {
     "data": {
-        "message": "Kategori berhasil dihapus"
+        "message": "Category deleted successfully"
     }
 }
 ```
@@ -185,7 +187,7 @@ response body (failed):
 status: 409 Conflict
 ```json
 {
-    "errors": "Kategori masih digunakan oleh kegiatan"
+    "errors": "Category is still used by activities"
 }
 ```
 

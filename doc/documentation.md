@@ -1,5 +1,7 @@
 # Documentation API Spec
 
+Upload menerima satu field file, format JPEG, PNG, atau PDF, maksimal 10 MiB. Ekstensi, MIME, dan signature dasar diperiksa. File disimpan privat di storage/documentations; download tetap memerlukan token. uploaded_by dapat null jika pengguna telah dihapus.
+
 ## UPLOAD DOCUMENTATION
 endpoint : POST /api/activities/{activity_id}/documentations
 
@@ -20,12 +22,12 @@ status: 201 Created
 ```json
 {
     "data": {
-        "id": "1",
-        "activity_id": "1",
+        "id": 1,
+        "activity_id": 1,
         "file_name": "daftar-hadir.pdf",
         "mime_type": "application/pdf",
         "size": 245760,
-        "uploaded_by": "1",
+        "uploaded_by": 1,
         "created_at": "2026-09-15T04:00:00Z",
         "download_url": "/api/activities/1/documentations/1/download"
     }
@@ -38,7 +40,7 @@ response body (failed):
 status: 413 Payload Too Large
 ```json
 {
-    "errors": "Ukuran file maksimal 10 MiB"
+    "errors": "Maximum file size is 10 MiB"
 }
 ```
 
@@ -61,12 +63,12 @@ status: 200 OK
 {
     "data": [
         {
-            "id": "1",
-            "activity_id": "1",
+            "id": 1,
+            "activity_id": 1,
             "file_name": "daftar-hadir.pdf",
             "mime_type": "application/pdf",
             "size": 245760,
-            "uploaded_by": "1",
+            "uploaded_by": 1,
             "created_at": "2026-09-15T04:00:00Z",
             "download_url": "/api/activities/1/documentations/1/download"
         }
@@ -101,12 +103,12 @@ status: 200 OK
 ```json
 {
     "data": {
-        "id": "1",
-        "activity_id": "1",
+        "id": 1,
+        "activity_id": 1,
         "file_name": "daftar-hadir.pdf",
         "mime_type": "application/pdf",
         "size": 245760,
-        "uploaded_by": "1",
+        "uploaded_by": 1,
         "created_at": "2026-09-15T04:00:00Z",
         "download_url": "/api/activities/1/documentations/1/download"
     }
@@ -119,7 +121,7 @@ response body (failed):
 status: 404 Not Found
 ```json
 {
-    "errors": "Dokumentasi tidak ditemukan"
+    "errors": "Documentation not found"
 }
 ```
 
@@ -154,7 +156,7 @@ response body (failed):
 status: 404 Not Found
 ```json
 {
-    "errors": "Dokumentasi tidak ditemukan"
+    "errors": "Documentation not found"
 }
 ```
 status error lainnya: 401, 403, 500 mengikuti common.md. Error dikembalikan sebagai application/json.
@@ -176,7 +178,7 @@ status: 200 OK
 ```json
 {
     "data": {
-        "message": "Dokumentasi berhasil dihapus"
+        "message": "Documentation deleted successfully"
     }
 }
 ```
@@ -187,7 +189,7 @@ response body (failed):
 status: 404 Not Found
 ```json
 {
-    "errors": "Dokumentasi tidak ditemukan"
+    "errors": "Documentation not found"
 }
 ```
 
