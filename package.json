@@ -10,7 +10,8 @@
     "test": "jest",
     "build": "tsc",
     "seed": "prisma db seed",
-    "dev": "nodemon dist/main.js"
+    "dev": "nodemon dist/main.js",
+    "vercel-build": "prisma generate && tsc"
   },
   "prisma": {
     "seed": "node prisma/seed.cjs"
