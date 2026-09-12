@@ -39,6 +39,10 @@ apiRouter.patch("/api/activities/current/:id/status", ActivityController.updateS
 apiRouter.delete("/api/activities/current/:id", ActivityController.delete)
 
 // DOCUMENTATION API
+apiRouter.post("/api/activities/:activity_id/documentations/upload-url", DocumentationController.prepare)
+apiRouter.post("/api/activities/:activity_id/documentations/complete", DocumentationController.complete)
+apiRouter.post("/api/activities/:activity_id/documentations/cancel", DocumentationController.cancel)
+apiRouter.get("/api/activities/:activity_id/documentations/:id/download-url", DocumentationController.downloadLink)
 apiRouter.post("/api/activities/:activity_id/documentations", ActivityUploadAccess, UploadMiddleware, DocumentationController.upload)
 apiRouter.get("/api/activities/:activity_id/documentations", DocumentationController.getAll)
 apiRouter.get("/api/activities/:activity_id/documentations/:id", DocumentationController.get)

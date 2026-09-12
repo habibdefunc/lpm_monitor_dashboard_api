@@ -2,8 +2,18 @@ import path from "node:path"
 import {mkdir, writeFile, unlink, readFile, rename} from "node:fs/promises"
 import {randomUUID} from "node:crypto"
 import {ResponseError} from "../error/responseError"
+import {SupabaseStorage} from "./supabaseStorage"
 
 export class FileStorage {
+    static isRemote(fileName: string): boolean { return fileName.startsWith("supabase:") }
+
+    static async move(source: string, destination: string): Promise<void> {
+        if (this.isRemote(source) && this.isRemote(destination)) {
+            await SupabaseStorage.move(source.slice(9), destination.slice(9))
+            return
+        }
+        await rename(this.resolve(source), this.resolve(destination))
+    }
     static readonly DIRECTORY = path.resolve("storage/documentations")
 
     static resolve(fileName: string): string {
@@ -22,18 +32,28 @@ export class FileStorage {
         if (!["pdf", "png", "jpg"].includes(extension)) {
             throw new ResponseError(415, "Unsupported file type")
         }
-        await mkdir(this.DIRECTORY, {recursive: true})
         const fileName = randomUUID() + "." + extension
+        if (process.env.NODE_ENV !== "test" && (process.env.VERCEL || process.env.SUPABASE_URL)) {
+            const mime = extension === "pdf" ? "application/pdf" : extension === "png" ? "image/png" : "image/jpeg"
+            await SupabaseStorage.save(fileName, buffer, mime)
+            return "supabase:" + fileName
+        }
+        await mkdir(this.DIRECTORY, {recursive: true})
         await writeFile(this.resolve(fileName), buffer, {flag: "wx"})
         return fileName
     }
 
     static async read(fileName: string): Promise<Buffer> {
+        if (this.isRemote(fileName)) return SupabaseStorage.read(fileName.slice(9))
         return readFile(this.resolve(fileName))
     }
 
     static async delete(fileName: string): Promise<void> {
         try{
+            if (this.isRemote(fileName)) {
+                await SupabaseStorage.remove(fileName.slice(9))
+                return
+            }
             await unlink(this.resolve(fileName))
         }
         catch (error){
@@ -49,13 +69,14 @@ export class FileStorage {
         const files: {original: string, temporary: string}[] = []
         try{
             for (const fileName of fileNames) {
-                const temporary = randomUUID() + ".pending-delete"
+                const temporary = (this.isRemote(fileName) ? "supabase:" : "") + randomUUID() + ".pending-delete"
                 try{
-                    await rename(this.resolve(fileName), this.resolve(temporary))
+                    await this.move(fileName, temporary)
                     files.push({original: fileName, temporary: temporary})
                 }
                 catch (error){
-                    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+                    if ((error instanceof Error && "code" in error && error.code === "ENOENT")
+                        || (error instanceof ResponseError && error.status === 404)) {
                         continue
                     }
                     throw error
@@ -71,7 +92,7 @@ export class FileStorage {
 
     static async restore(files: {original: string, temporary: string}[]): Promise<void> {
         for (const file of files) {
-            await rename(this.resolve(file.temporary), this.resolve(file.original))
+            await this.move(file.temporary, file.original)
         }
     }
 

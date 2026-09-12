@@ -1,7 +1,22 @@
 import path from "node:path"
 import {ResponseError} from "../error/responseError"
+import {z} from "zod"
 
 export class DocumentationValidation {
+    static readonly PREPARE = z.object({
+        file_name: z.string().min(1).max(255).refine(value => !/[\x00-\x1f\x7f\\/]/.test(value), "Invalid file name"),
+        mime_type: z.enum(["application/pdf", "image/png", "image/jpeg"]),
+        size: z.number().int().positive().max(10 * 1024 * 1024)
+    }).strict()
+    static readonly COMPLETE = z.object({ticket: z.string().min(1).max(4096)}).strict()
+
+    static extension(name: string, mime: string): "pdf" | "png" | "jpg" {
+        const extension = path.extname(name).toLowerCase()
+        if (extension === ".pdf" && mime === "application/pdf") return "pdf"
+        if (extension === ".png" && mime === "image/png") return "png"
+        if ([".jpg", ".jpeg"].includes(extension) && mime === "image/jpeg") return "jpg"
+        throw new ResponseError(415, "Unsupported file type")
+    }
     static validate(file: Express.Multer.File | undefined): string {
         if (!file || file.size === 0) {
             throw new ResponseError(400, "File is required")

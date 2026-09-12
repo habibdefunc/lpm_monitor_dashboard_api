@@ -1,5 +1,15 @@
 # User API Spec
 
+## Ketentuan umum
+
+Login bersifat public; endpoint lainnya membutuhkan X-API-TOKEN dari login. Role pada database harus ADMIN atau STAF. Login baru mengganti token lama, dan logout mengosongkan token.
+
+Request JSON menggunakan Content-Type: application/json. Body menolak field tidak dikenal. Create memerlukan seluruh field pada contoh; update hanya memerlukan minimal satu field dan mempertahankan field yang tidak dikirim. PATCH /users/current tidak menerima role; perubahan role hanya melalui endpoint ADMIN.
+
+Validasi backend saat ini: username/name/jenis_kel 1–100 karakter, password 1–255, email 1–254, no_hp 1–20, alamat 1–500. Role harus ADMIN atau STAF. Username/email harus unik. Format email dan aturan nomor HP 10–15 digit pada frontend belum diterapkan sebagai aturan format di UserValidation backend; keduanya tidak boleh dianggap identik.
+
+Error menggunakan {"errors":"message"}; status umum mengikuti [common.md](common.md). ID pengguna harus integer positif maksimal 2147483647. replacement_user_id pada body delete wajib number, bukan string.
+
 ## CREATE USER
 endpoint : POST /api/users
 

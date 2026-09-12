@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express"
 import { ZodError } from "zod"
 import {ResponseError} from "../error/responseError"
 import multer from "multer"
+import {logger} from "../application/logging"
 
 export const errorMiddleware = async(error: Error, req: Request, res: Response, next: NextFunction) => {
     if (res.headersSent) {
@@ -33,6 +34,18 @@ export const errorMiddleware = async(error: Error, req: Request, res: Response, 
             errors: "Related record is invalid or still in use"
         })
     } else{
+        logger.error("Unhandled API error", {
+            method: req.method,
+            route: req.route?.path ?? "unmatched",
+            name: error.name,
+            code: error instanceof Prisma.PrismaClientKnownRequestError
+                ? error.code
+                : error instanceof Prisma.PrismaClientInitializationError
+                    ? error.errorCode
+                    : "code" in error && typeof error.code === "string"
+                        ? error.code
+                        : undefined
+        })
         res.status(500).json({
             errors: "Internal server error"
         })

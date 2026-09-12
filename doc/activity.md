@@ -66,7 +66,7 @@ X-API-TOKEN: token
 
 request query:
 
-- search: opsional, pencarian sebagian nama kegiatan; sensitivitas huruf mengikuti collation MySQL, 1-150 karakter.
+- search: opsional, pencarian sebagian nama kegiatan dengan Prisma contains pada PostgreSQL, 1-150 karakter. Query tidak menggunakan mode insensitive.
 - start_date dan end_date: opsional, format YYYY-MM-DD; jika keduanya ada, end_date >= start_date.
 - category_id: opsional, ID kategori.
 - status: opsional, DIRENCANAKAN, BERJALAN, atau SELESAI.
