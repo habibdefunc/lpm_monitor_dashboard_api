@@ -11,7 +11,7 @@
     "build": "tsc",
     "seed": "prisma db seed",
     "dev": "nodemon dist/main.js",
-    "vercel-build": "prisma generate && tsc"
+    "vercel-build": "prisma generate && prisma migrate deploy && prisma db seed && tsc"
   },
   "prisma": {
     "seed": "node prisma/seed.cjs"
