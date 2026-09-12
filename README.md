@@ -4,7 +4,7 @@ Backend dashboard pencatatan kegiatan LPM UINSU.
 
 ## Teknologi
 
-Node.js 22, TypeScript, Express, MySQL/MariaDB, Prisma 6, Zod, bcrypt, Multer, Winston, Jest, dan Supertest.
+Node.js 22, TypeScript, Express, PostgreSQL/Supabase, Prisma 6, Zod, bcrypt, Multer, Winston, Jest, dan Supertest.
 
 ## Fitur API
 
@@ -78,7 +78,7 @@ cp .env.example .env
 Isi koneksi database pada `.env`:
 
 ```dotenv
-DATABASE_URL="mysql://USER:PASSWORD@localhost:3306/lpm_monitor_db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DB_NAME"
 ```
 
 Ganti USER dan PASSWORD sesuai akun MySQL.
